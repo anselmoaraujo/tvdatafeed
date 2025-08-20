@@ -1,5 +1,7 @@
 import pandas as pd
 from tvDatafeed import TvDatafeed, Interval
+import os
+from dotenv import load_dotenv
 
 def count_bars(start, end, freq):
     rng = pd.date_range(start=start, end=end, freq=freq)
@@ -16,7 +18,7 @@ def get_hist_chunk(tv, symbol, exchange, interval, n_bars):
     )
     return df
 
-def split_and_download(tv, symbol, exchange, interval, start, end, freq, max_bars=5000, adj_tz=False, conv_tz=False):
+def split_and_download(tv, symbol, exchange, interval, start, end, freq, max_bars=20000, adj_tz=False, conv_tz=False):
     start = pd.to_datetime(start)
     end = pd.to_datetime(end)
     all_data = []
@@ -53,6 +55,9 @@ def split_and_download(tv, symbol, exchange, interval, start, end, freq, max_bar
         return pd.DataFrame()
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+
     def get_nonempty_input(prompt):
         while True:
             value = input(prompt).strip()
@@ -84,8 +89,21 @@ if __name__ == "__main__":
         print(f"Invalid interval: {interval_str}. Valid options: {list(interval_map.keys())}")
         exit(1)
     interval = interval_map[interval_str]
+    
+    # Load credentials from .env or prompt
+    username = os.getenv("TV_USERNAME")
+    password = os.getenv("TV_PASSWORD")
+    if not username:
+        username = input("Enter TradingView username (or leave blank for nologin): ").strip() or None
+    if not password and username:
+        password = input("Enter TradingView password: ").strip() or None
 
-    tv = TvDatafeed()
+    # Use login if credentials provided, else fallback to nologin
+    if username and password:
+        tv = TvDatafeed(username, password)
+    else:
+        tv = TvDatafeed()
+
     final_data = split_and_download(tv, symbol, exchange, interval, start_date, end_date, interval_str, adj_tz=adj_tz, conv_tz=conv_tz)
     start_date_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
     end_date_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
