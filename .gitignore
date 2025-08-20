@@ -22,3 +22,4 @@ tvDatafeed/symbols.pkl
 tvDatafeed/beta.py
 
 *.csv
+.env
